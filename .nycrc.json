@@ -1,0 +1,22 @@
+{
+  "description": "These are just examples for demonstration, nothing prescriptive",
+  "nyc": {
+    "check-coverage": true,
+    "lines": 99,
+    "statements": 99,
+    "functions": 99,
+    "branches": 99,
+    "include": [
+      "src/**/*.js"
+    ],
+    "exclude": [
+      "src/**/*.spec.js"
+    ],
+    "reporter": [
+      "html"
+    ],
+    "extension": [
+      ".js"
+    ]
+  }
+}

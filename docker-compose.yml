@@ -1,0 +1,56 @@
+version: '3.1'
+
+services:
+
+  db:
+    image: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    networks:
+      - fsdnet
+    command: mysqld --sql_mode=''
+    ports:
+      - "7000:3306"
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: unless-stopped
+    environment:
+      PMA_HOST: ${PMA_HOST}
+      UPLOAD_LIMIT: 5G
+    ports:
+      - "11000:80"
+    networks:
+      - fsdnet
+
+  redis:
+    image: redis
+    restart: unless-stopped
+    ports:
+      - "9000:6379"
+    networks:
+      - fsdnet
+    entrypoint: >-
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy volatile-ttl
+      --requirepass ${SESSION_REDIS_PASSWORD}
+
+  test_db:
+    image: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_DATABASE: "fsd_studio_test_db"
+    networks:
+      - fsdnet
+    command: mysqld --sql_mode=''
+    ports:
+      - "7001:3306"
+
+networks:
+  fsdnet:
+    external: true
