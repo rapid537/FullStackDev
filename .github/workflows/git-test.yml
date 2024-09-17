@@ -112,6 +112,9 @@ jobs:
         npx nyc report --skip-full --reporter=text | tee coverage/coverage.txt
         npx nyc report --skip-full --reporter=json-summary | tee coverage/json-summary.txt
 
+        ls /home/runner/work
+        ls /home/runner/work/FullStackDev
+
     # comment cpyress results in pull request
     - name: Cypress Coverage Comment
       uses: MishaKav/jest-coverage-comment@main
