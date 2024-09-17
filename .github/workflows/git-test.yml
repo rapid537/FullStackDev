@@ -12,7 +12,7 @@ env:
   PMA_HOST: 'test_db'
   PMA_USER: 'root'
   PMA_PASSWORD: 'root'
-  STUDIO_ENVIRONMENT:  'development'
+  FSD_ENVIRONMENT:  'development'
   SMTP_PW: 'secret_smtp_password'
   DOMAIN_NAME: 'code.dev.com'
   SESSION_ID: 'guest'
