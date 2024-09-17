@@ -112,24 +112,21 @@ jobs:
         npx nyc report --skip-full --reporter=text | tee coverage/coverage.txt
         npx nyc report --skip-full --reporter=json-summary | tee coverage/json-summary.txt
 
-        ls /home/runner/work
-        ls /home/runner/work/FullStackDev
-
     # comment cpyress results in pull request
     - name: Cypress Coverage Comment
       uses: MishaKav/jest-coverage-comment@main
       with:
-        coverage-summary-path: /home/runner/work/fullstackdev/fullstackdev/coverage/coverage-summary.json
+        coverage-summary-path: /home/runner/work/FullStackDev/FullStackDev/coverage/coverage-summary.json
         badge-title: Cypress Coverage
-        junitxml-path: /home/runner/work/fullstackdev/fullstackdev/coverage/clover.xml
+        junitxml-path: /home/runner/work/FullStackDev/FullStackDev/coverage/clover.xml
         coverage-title: Cypress Report Summary
-        coverage-path: /home/runner/work/fullstackdev/fullstackdev/coverage/coverage.txt
+        coverage-path: /home/runner/work/FullStackDev/FullStackDev/coverage/coverage.txt
 
     # comment pytest results in pull request
     - name: Pytest Coverage Comment
       uses: MishaKav/pytest-coverage-comment@main
       with:
-        pytest-xml-coverage-path: /home/runner/work/fullstackdev/fullstackdev/cypytest.xml
-        junitxml-path: /home/runner/work/fullstackdev/fullstackdev/cypytest.txt
+        pytest-xml-coverage-path: /home/runner/work/FullStackDev/FullStackDev/cypytest.xml
+        junitxml-path: /home/runner/work/FullStackDev/FullStackDev/cypytest.txt
         title: Pytest Report Summary
         badge-title: Pytest Coverage
