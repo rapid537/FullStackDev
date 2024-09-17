@@ -1,0 +1,132 @@
+name: Tests Status
+on:
+  pull_request:
+    branches: [ staging, master ]
+
+env:
+  CACHE_REDIS_PASSWORD: 'secret_cache_redis_password'
+  SESSION_REDIS_PASSWORD: 'secret_session_redis_password'
+  MYSQL_ROOT_PASSWORD: 'root'
+  MYSQL_DATABASE: 'fsd_studio_test_db'
+  MYSQL_URL: '0.0.0.0:7001'
+  PMA_HOST: 'test_db'
+  PMA_USER: 'root'
+  PMA_PASSWORD: 'root'
+  STUDIO_ENVIRONMENT:  'development'
+  SMTP_PW: 'secret_smtp_password'
+  DOMAIN_NAME: 'code.dev.com'
+  SESSION_ID: 'guest'
+  SESSION_ID_EMAIL: 'test_user@mail.com'
+  EMAIL_FROM_ADDRESS: 'test_user@mail.com'
+  JWT_BYPASS: False
+  LC_ALL: 'en_US.UTF-8'
+  USE_TEST_API: True
+  REACT_APP_USE_TEST_API: True
+
+jobs:
+  test:
+    # versions
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+        node-version: [20.x]
+
+    # steps produce combined cypress and pytest coverage for backend
+    steps:
+    - uses: actions/checkout@v4
+
+    # create .log directory
+    - name: Create Log Directory
+      run: |
+        mkdir -p .log
+
+    # bind host address
+    - name: Bind Host Mapping
+      run: |
+        sudo echo "127.0.0.1 code.dev.com" | sudo tee -a /etc/hosts
+
+    # set up node
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    # set up python
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    # spin up containers
+    - name: Start Test Database Containers
+      run: |
+        docker network create -d bridge --subnet 192.168.0.0/24 --gateway 192.168.0.1 fsdnet \
+        || echo "skipping docker network create"
+        docker compose up -d test_db redis
+
+    # generate the combined coverage files
+    - name: Pip Install and Build Coverage Files
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential python3-dev libev-dev procps
+        python3 -m venv venv
+        . venv/bin/activate
+        cd srv
+        python3 -m pip install --upgrade pip
+        python3 -m pip install wheel
+        python3 -m pip install --no-cache-dir -r requirements.txt
+        cd ../
+        flask --app=srv/app.py run --host=code.dev.com --port=5001 --debugger &
+
+        echo 'Waiting on flask to launch on 5001...'
+        while ! nc -z localhost 5001; do sleep 3; done
+        echo 'Flask launched successfully!'
+
+        curl 0.0.0.0:5001/api/coverage_start
+
+    # run cypress specs
+    - name: Run Cypress
+      uses: cypress-io/github-action@v4
+      env:
+        REACT_APP_USE_TEST_API: True
+        USE_TEST_API: True
+      with:
+        browser: chrome
+        wait-on: 'http://code.dev.com:3000'
+        wait-on-timeout: 120
+        start: |
+          yarn run start-dev
+
+    # generate the combined coverage report files
+    - name: Build Report Files
+      run: |
+        . venv/bin/activate
+        curl 0.0.0.0:5001/api/coverage_stop
+
+        coverage run --context=py_context --append --module pytest
+        coverage xml -i -o cypytest.xml
+        coverage report -i --skip-covered | tee cypytest.txt
+
+        npx nyc report --skip-full --reporter=clover
+        npx nyc report --skip-full --reporter=text | tee coverage/coverage.txt
+        npx nyc report --skip-full --reporter=json-summary | tee coverage/json-summary.txt
+
+    # comment cpyress results in pull request
+    - name: Cypress Coverage Comment
+      uses: MishaKav/jest-coverage-comment@main
+      with:
+        coverage-summary-path: /home/runner/work/fsd/fsd/coverage/coverage-summary.json
+        badge-title: Cypress Coverage
+        junitxml-path: /home/runner/work/fsd/fsd/coverage/clover.xml
+        coverage-title: Cypress Report Summary
+        coverage-path: /home/runner/work/fsd/fsd/coverage/coverage.txt
+
+    # comment pytest results in pull request
+    - name: Pytest Coverage Comment
+      uses: MishaKav/pytest-coverage-comment@main
+      with:
+        pytest-xml-coverage-path: /home/runner/work/fsd/fsd/cypytest.xml
+        junitxml-path: /home/runner/work/fsd/fsd/cypytest.txt
+        title: Pytest Report Summary
+        badge-title: Pytest Coverage
