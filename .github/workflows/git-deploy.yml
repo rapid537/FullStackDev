@@ -13,7 +13,7 @@ env:
   PMA_USER: ${{ secrets.PMA_USER }}
   PMA_PASSWORD: ${{ secrets.PMA_PASSWORD }}
   PMA_ABSOLUTE_URI: 'https://147.182.128.96/pma/'  # ip addreess/domain name of your droplet
-  STUDIO_ENVIRONMENT: 'production'
+  FSD_ENVIRONMENT: 'production'
   SMTP_PW: ${{ secrets.SMTP_PW }}
   DOMAIN_NAME: '147.182.128.96'  # ip addreess/domain name of your droplet
   SESSION_ID: 'guest'
