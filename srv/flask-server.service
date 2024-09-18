@@ -1,0 +1,12 @@
+[Unit]
+Description=Flask Production Server (waitress)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/actions-runner/fsd_deploy_work_folder/FullStackDev/FullStackDev/venv/bin/python /home/actions-runner/fsd_deploy_work_folder/FullStackDev/FullStackDev/srv/app.py
+Restart=always
+EnvironmentFile=/etc/environment
+
+[Install]
+WantedBy=multi-user.target
