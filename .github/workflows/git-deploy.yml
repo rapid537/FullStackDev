@@ -23,89 +23,89 @@ env:
   LC_ALL: 'en_US.UTF-8'
 
   jobs:
-  deploy:
-    runs-on: self-hosted
-    environment: production
-    defaults:
-      run:
-        shell: bash
-    strategy:
-      matrix:
-        node-version: [20.x]
-        python-version: [3.8]
-    steps:
+    deploy:
+      runs-on: self-hosted
+      environment: production
+      defaults:
+        run:
+          shell: bash
+      strategy:
+        matrix:
+          node-version: [20.x]
+          python-version: [3.8]
+      steps:
 
-    - name: Set Up Python 3.8
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set Up Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Set Up Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
+      - name: Set Up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
 
-    - name: Clean Working Directory
-      run: |
-        echo ${{ secrets.DO_SU }} | sudo -S rm -rf \
-        /home/fsd/actions-runner/fsd_deploy_work_folder/fsd/fsd/* || echo "cwd is clean"
+      - name: Clean Working Directory
+        run: |
+          echo ${{ secrets.DO_SU }} | sudo -S rm -rf \
+          /home/fsd/actions-runner/fsd_deploy_work_folder/fsd/fsd/* || echo "cwd is clean"
 
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set Up Flask Systemd
-      run: |
-        if [ ! -f /etc/systemd/system/flask-server.service ]; then
-          echo ${{ secrets.DO_SU }} | sudo -S cp -r srv/flask-server.service /etc/systemd/system
-          sudo -S systemctl daemon-reload
-        fi
-        exit
+      - name: Set Up Flask Systemd
+        run: |
+          if [ ! -f /etc/systemd/system/flask-server.service ]; then
+            echo ${{ secrets.DO_SU }} | sudo -S cp -r srv/flask-server.service /etc/systemd/system
+            sudo -S systemctl daemon-reload
+          fi
+          exit
 
-    - name: Set Up Nginx
-      run: |
-        echo ${{ secrets.DO_SU }} | sudo -S cat nginx.conf > /etc/nginx/sites-available/default
+      - name: Set Up Nginx
+        run: |
+          echo ${{ secrets.DO_SU }} | sudo -S cat nginx.conf > /etc/nginx/sites-available/default
 
-    - name: Pip Install
-      run: |
-        apt update && apt install -y build-essential python3-dev libev-dev
-        python3 -m venv venv
-        . venv/bin/activate
-        cd srv
-        python3 -m pip install --upgrade pip
-        python3 -m pip install wheel
-        python3 -m pip install --no-cache-dir -r requirements.txt
+      - name: Pip Install
+        run: |
+          apt update && apt install -y build-essential python3-dev libev-dev
+          python3 -m venv venv
+          . venv/bin/activate
+          cd srv
+          python3 -m pip install --upgrade pip
+          python3 -m pip install wheel
+          python3 -m pip install --no-cache-dir -r requirements.txt
 
-    - name: Yarn Build
-      run: |
-        npm install -g yarn
-        yarn install
-        yarn run build
-        npm uninstall -g yarn
+      - name: Yarn Build
+        run: |
+          npm install -g yarn
+          yarn install
+          yarn run build
+          npm uninstall -g yarn
 
-    - name: Migrate Build
-      run: |
-        echo ${{ secrets.DO_SU }} | sudo -S rm -r /var/www/html/build || echo "no existing build found..."
-        echo ${{ secrets.DO_SU }} | sudo -S mv build /var/www/html/build
+      - name: Migrate Build
+        run: |
+          echo ${{ secrets.DO_SU }} | sudo -S rm -r /var/www/html/build || echo "no existing build found..."
+          echo ${{ secrets.DO_SU }} | sudo -S mv build /var/www/html/build
 
-    - name: Start Containers
-      run: |
-        docker network create -d bridge --subnet 192.168.0.0/24 --gateway 192.168.0.1 fsdnet \
-        || echo "skipping docker network create"
-        docker-compose up -d db redis
+      - name: Start Containers
+        run: |
+          docker network create -d bridge --subnet 192.168.0.0/24 --gateway 192.168.0.1 fsdnet \
+          || echo "skipping docker network create"
+          docker-compose up -d db redis
 
-    - name: Start Flask
-      run: |
-        echo ${{ secrets.DO_SU }} | sudo -S systemctl stop flask-server
-        RUNNER_TRACKING_ID="" && echo ${{ secrets.DO_SU }} | sudo -S systemctl start flask-server
+      - name: Start Flask
+        run: |
+          echo ${{ secrets.DO_SU }} | sudo -S systemctl stop flask-server
+          RUNNER_TRACKING_ID="" && echo ${{ secrets.DO_SU }} | sudo -S systemctl start flask-server
 
-    - name: Run Deployment Migrations
-      run: |
-        docker-compose up -d phpmyadmin
-        . venv/bin/activate
-        cd srv
-        flask db upgrade || echo "no flask db migrations found... skipping"
-        cd ../
-        docker-compose stop phpmyadmin
+      - name: Run Deployment Migrations
+        run: |
+          docker-compose up -d phpmyadmin
+          . venv/bin/activate
+          cd srv
+          flask db upgrade || echo "no flask db migrations found... skipping"
+          cd ../
+          docker-compose stop phpmyadmin
 
-    - name: Start Nginx
-      run: |
-        echo ${{ secrets.DO_SU }} | sudo -S systemctl restart nginx
+      - name: Start Nginx
+        run: |
+          echo ${{ secrets.DO_SU }} | sudo -S systemctl restart nginx
