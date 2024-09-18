@@ -90,7 +90,7 @@ jobs:
       run: |
         docker network create -d bridge --subnet 192.168.0.0/24 --gateway 192.168.0.1 fsdnet \
         || echo "skipping docker network create"
-        docker-compose up -d db redis
+        docker compose up -d db redis
 
     - name: Start Flask
       run: |
@@ -99,12 +99,12 @@ jobs:
 
     - name: Run Deployment Migrations
       run: |
-        docker-compose up -d phpmyadmin
+        docker compose up -d phpmyadmin
         . venv/bin/activate
         cd srv
         flask db upgrade || echo "no flask db migrations found... skipping"
         cd ../
-        docker-compose stop phpmyadmin
+        docker compose stop phpmyadmin
 
     - name: Start Nginx
       run: |
